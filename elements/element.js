@@ -1,5 +1,7 @@
 var util = require('util');
 var Node = require('../lib/node');
+var Euler = require('../lib/euler');
+var Vector = require('../lib/vector');
 
 /**
  * Element represents any node in the scene graph, and provides support for client<->server synchronisation
@@ -7,46 +9,34 @@ var Node = require('../lib/node');
  */
 function Element () {
   Node.apply(this, arguments);
-  this._propertyChangeObserverList = [];
+  var _propertyChangeObserverList = [];
+
+  /**
+   * Add a callback to be called when the given property is chagned.
+   * The observer will perform deep-inspection of vector and euler properties
+   */
+  this.addPropertyChangeObserver = function (propName, callback) {
+    if(!_propertyChangeObserverList[propName]) {
+      _propertyChangeObserverList[propName] = [];
+    }
+    _propertyChangeObserverList[propName].push(callback);
+  };
+
+  /**
+   * Helper function to trigger observer callbacks for a change to the given propName
+   */
+  this._triggerPropertyChange = function (propName) {
+    var value = this[propName];
+    if(_propertyChangeObserverList[propName]) {
+      _propertyChangeObserverList[propName].forEach(function (callback) {
+        callback(value);
+      });
+    }
+  };
+
 }
 
 util.inherits(Element, Node);
-
-
-function createVector (element, x, y, z) {
-  var v = new Vector(x, y, z);
-  v._element = element;
-  return v;
-}
-
-function createEuler (element, x, y, z) {
-  var e = new Euler(x, y, z);
-  e._element = element;
-  return e;
-}
-
-/**
- * Add a callback to be called when the given property is chagned.
- * The observer will perform deep-inspection of vector and euler properties
- */
-Element.prototype.addPropertyChangeObserver = function (propName, callback) {
-  if(!this._propertyChangeObserverList[propName]) {
-    this._propertyChangeObserverList[propName] = [];
-  }
-  this._propertyChangeObserverList[propName].push(callback);
-};
-
-/**
- * Helper function to trigger observer callbacks for a change to the given propName
- */
-Element.prototype._triggerPropertyChange = function (propName) {
-  var value = this[propName];
-  if(this._propertyChangeObserverList[propName]) {
-    this._propertyChangeObserverList[propName].forEach(function (callback) {
-      callback(value);
-    });
-  }
-};
 
 /**
  * Return a get/set pair to manage a vector parameter
@@ -58,10 +48,12 @@ Element.createVectorProperty = function (attrName, defaultValue) {
   return {
     get: function () {
       if(!this[privateProperty]) {
-        var self = this;
-        this[privateProperty] = createVector(this, defaultValue[0], defaultValue[1], defaultValue[2]);
+        this[privateProperty] = new Vector(defaultValue[0], defaultValue[1], defaultValue[2]);
+  
         // Add change observer for deep change inspection
+        var self = this;
         this[privateProperty].addChangeObserver(function () {
+          self.markAsDirty();
           self._triggerPropertyChange(attrName);
         });
       }
@@ -71,9 +63,9 @@ Element.createVectorProperty = function (attrName, defaultValue) {
       var v;
 
       if (value instanceof Vector) {
-        this[privateProperty] = createVector(this).copy(value);
+        this[privateProperty] = new Vector().copy(value);
       } else if (typeof value === 'string') {
-        v = createVector(this).fromArray(value.split(' ').map(parseFloat));
+        v = new Vector().fromArray(value.split(' ').map(parseFloat));
 
         if (isFinite(v.length())) {
           this[privateProperty] = v;
@@ -87,6 +79,7 @@ Element.createVectorProperty = function (attrName, defaultValue) {
       // Add change observer for deep change inspection
       var self = this;
       this[privateProperty].addChangeObserver(function () {
+        self.markAsDirty();
         self._triggerPropertyChange(attrName);
       });
 
@@ -106,10 +99,12 @@ Element.createEulerProperty = function (attrName, defaultValue) {
   return {
     get: function () {
       if(!this[privateProperty]) {
-        var self = this;
-        this[privateProperty] = createEuler(this, defaultValue[0], defaultValue[1], defaultValue[2]);
+        this[privateProperty] = new Euler(defaultValue[0], defaultValue[1], defaultValue[2]);
+
         // Add change observer for deep change inspection
+        var self = this;
         this[privateProperty].addChangeObserver(function () {
+          self.markAsDirty();
           self._triggerPropertyChange(attrName);
         });
       }
@@ -119,9 +114,9 @@ Element.createEulerProperty = function (attrName, defaultValue) {
       var v;
 
       if (value instanceof Euler) {
-        this[privateProperty] = createEuler(this).copy(value);
+        this[privateProperty] = new Euler().copy(value);
       } else if (typeof value === 'string') {
-        v = createEuler(this).fromArray(value.split(' ').map(parseFloat));
+        v = new Euler().fromArray(value.split(' ').map(parseFloat));
 
         if (isFinite(v.x) && isFinite(v.y) && isFinite(v.z)) {
           this[privateProperty] = v;
@@ -135,6 +130,7 @@ Element.createEulerProperty = function (attrName, defaultValue) {
       // Add change observer for deep change inspection
       var self = this;
       this[privateProperty].addChangeObserver(function () {
+        self.markAsDirty();
         self._triggerPropertyChange(attrName);
       });
 

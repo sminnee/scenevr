@@ -1,9 +1,6 @@
 var util = require('util');
 var Element = require('./element');
 var Vector = require('../lib/vector');
-var Euler = require('../lib/euler');
-var Node = require('../lib//node');
-
 /**
  * SpatialElement represents a node the system that has a spatial presence:
  * position, rotation, scale, velocity, mass, material

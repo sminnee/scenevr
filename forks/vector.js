@@ -15,7 +15,6 @@ Vector = function ( x, y, z ) {
   this._x = x || 0;
   this._y = y || 0;
   this._z = z || 0;
-  this._element = null;
 
   Object.defineProperties(this, {
     x : {
@@ -78,10 +77,6 @@ Vector.prototype = {
    * Helper method called by internal methods whenever properties are changed
    */
   onChanged: function(){
-    if(this._element){
-      this._element.markAsDirty();
-    }
-
     // Change observers
     if(this._changeObserverList) {
       this._changeObserverList.forEach(function (callback) {
