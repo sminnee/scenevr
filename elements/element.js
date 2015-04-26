@@ -7,6 +7,7 @@ var Node = require('../lib/node');
  */
 function Element () {
   Node.apply(this, arguments);
+  this._propertyChangeObserverList = [];
 }
 
 util.inherits(Element, Node);
@@ -23,8 +24,6 @@ function createEuler (element, x, y, z) {
   e._element = element;
   return e;
 }
-
-Element.prototype._propertyChangeObserverList = [];
 
 /**
  * Add a callback to be called when the given property is chagned.

@@ -71,8 +71,19 @@ Physics.prototype.init = function () {
 
   // Create world
   this.world = new CANNON.World();
-  this.world.gravity.set(0, -20, 0); // m/s²
   this.world.broadphase = new CANNON.NaiveBroadphase();
+
+  if(this.scene.getElementsByTagName('physics').length) {
+    // Set gravity
+    var physicsInfo = this.scene.getElementsByTagName('physics')[0];
+    var gravity = physicsInfo.gravity;
+    this.world.gravity.set(gravity.x, gravity.y, gravity.z);
+
+    // Update gravity
+    physicsInfo.addPropertyChangeObserver('gravity', function(gravity) {
+      $p.world.gravity.set(gravity.x, gravity.y, gravity.z);
+    });
+  }
 
   materialInteractions.forEach(function (contactMaterial) {
     $p.world.addContactMaterial(contactMaterial);
@@ -185,7 +196,7 @@ Physics.prototype.buildNode = function (el) {
       body.quaternion.setFromEuler(rotation.x, rotation.y, rotation.z);
     });
     el.addPropertyChangeObserver('scale', function(scale) {
-      throw "Can't mutate scale in real-time yet";
+      //throw "Can't mutate scale in real-time yet";
     });
     el.addPropertyChangeObserver('velocity', function(velocity) {
       body.velocity = cannonVec(velocity);
@@ -210,18 +221,6 @@ Physics.prototype.buildNode = function (el) {
       } else {
         throw 'Bad material name "' + material + '"';
       }
-    };
-
-    el.setVelocity = function (velocity) {
-      // Process string representation of velocity
-      if (typeof velocity === 'string') {
-        velocity = velocity.split(' ');
-        // console.log(velocity);
-        velocity = { x: parseFloat(velocity[0]), y: parseFloat(velocity[1]), z: parseFloat(velocity[2]) };
-      }
-
-      el.velocity = velocity;
-      body.velocity = cannonVec(velocity);
     };
 
     body.updateScene = function () {

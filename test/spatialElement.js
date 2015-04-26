@@ -119,6 +119,25 @@ test('position', function (t) {
     t.end();
   });
 
+  t.test('change observation shouldn\'t cross into other objects', function (t) {
+    t.plan(2);
+
+    var e1 = new SpatialElement('box');
+    e1.position = '1 2 3';
+    var e2 = new SpatialElement('box');
+    e2.position = '4 5 6';
+
+    e1.addPropertyChangeObserver('position', function (value) {
+      t.equals(7, value.x, 'e1 callback called by e1 change');
+    });
+    e2.addPropertyChangeObserver('position', function (value) {
+      t.equals(8, value.x, 'e2 callback called by e2 change');
+    });
+    e1.position.x = 7;
+    e2.position.x = 8;
+
+    t.end();
+  });
 
   t.end();
 });
