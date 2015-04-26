@@ -23,5 +23,17 @@
   <skybox src="/blah/blah" />
   <audio src="/sounds/drone-sweet.mp3" ambient="true" />
   <fog style="color: #fff" near="100" far="1000" />
-  <plane style="texture-map: url(/images/grid.png); texture-repeat: 100 100;" scale="100 100 0", position="0 0 0" rotation="0 1.57 0" />
+  <plane style="texture-map: url(/images/grid.png); texture-repeat: 100 100;" scale="100 100 0" position="0 0 0" rotation="0 1.57 0" />
+  <!-- physics meta-data -->
+  <physics gravity="0 -20 0">
+    <!-- different materials and interactions -->
+    <material name="ground" />
+    <material name="vehicle">
+      <contactMaterial with="ground"
+        friction="0.4" restitution="0.3"
+        contactEquationStiffness="1e8"
+        contactEquationRelaxation="3"
+        frictionEquationStiffness="10000000" />
+    </material>
+  </physics>
 </scene>

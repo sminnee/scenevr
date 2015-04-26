@@ -180,6 +180,30 @@ Element.createScalarProperty = function (attrName, defaultValue) {
   };
 };
 
+/**
+ * Return a get/set pair to manage a string parameter
+ * attrName: The name of the property (e.g. 'material')
+ * defaultValue: A string representing the default value
+ */
+Element.createStringProperty = function (attrName, defaultValue) {
+  var privateProperty = '_'+attrName;
+  return {
+    get: function () {
+      return this[privateProperty] || (this[privateProperty] = defaultValue);
+    },
+    set: function (value) {
+      var v;
+
+      if (typeof value === 'string') {
+        this[privateProperty] = value;
+
+      } else {
+        throw new Error('Invalid ' + attrName + ' argument');
+      }
+    }
+  };
+};
+
 Element.prototype.removeChild = function () {};
 
 Element.prototype.getReflector = function () {

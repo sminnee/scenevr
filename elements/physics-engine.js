@@ -7,37 +7,6 @@ var CANNON = require('cannon');
 var Euler = require('../forks/euler');
 var Vector = require('../forks/vector');
 
-// Different materials to use
-var materials = {
-  'ground': new CANNON.Material('ground'),
-  'normal': new CANNON.Material('normal'),
-  'vehicle': new CANNON.Material('object')
-};
-
-// Parameters for the interactions between different materials
-var materialInteractions = [
-  new CANNON.ContactMaterial(materials.ground, materials.normal, {
-      friction: 0.4,
-      restitution: 0.3,
-      contactEquationStiffness: 1e8,
-      contactEquationRelaxation: 3,
-      frictionEquationStiffness: 1e8,
-      frictionEquationRegularizationTime: 3
-  }),
-  new CANNON.ContactMaterial(materials.ground, materials.vehicle, {
-      friction: 0.002,
-      restitution: 0.3,
-      contactEquationStiffness: 1e8,
-      contactEquationRelaxation: 3
-  }),
-  new CANNON.ContactMaterial(materials.vehicle, materials.normal, {
-      friction: 0.4,
-      restitution: 0.3,
-      contactEquationStiffness: 1e8,
-      contactEquationRelaxation: 3
-  })
-];
-
 /**
  * Convert another vector class to a Cannon vector
  */
@@ -54,58 +23,47 @@ function Physics (scene) {
   this.interval = null;
   this.world = null;
 
-  var $p = this;
-  var $s = scene;
+  var self = this;
 
   // Monkey patch the scene to listen to changes
   var __scene_appendChild = this.scene.appendChild;
   this.scene.appendChild = function (el) {
-    var response = __scene_appendChild.apply($s, [el]);
-    $p.onAppendChild(el);
+    var response = __scene_appendChild.apply(self.scene, [el]);
+    self.onAppendChild(el);
     return response;
   };
 }
 
 Physics.prototype.init = function () {
-  var $p = this;
+  var self = this;
 
   // Create world
   this.world = new CANNON.World();
   this.world.broadphase = new CANNON.NaiveBroadphase();
 
-  if(this.scene.getElementsByTagName('physics').length) {
-    // Set gravity
-    var physicsInfo = this.scene.getElementsByTagName('physics')[0];
-    var gravity = physicsInfo.gravity;
-    this.world.gravity.set(gravity.x, gravity.y, gravity.z);
+  this.materials = {
+    'default': new CANNON.Material('default')
+  };
 
-    // Update gravity
-    physicsInfo.addPropertyChangeObserver('gravity', function(gravity) {
-      $p.world.gravity.set(gravity.x, gravity.y, gravity.z);
-    });
-  }
-
-  materialInteractions.forEach(function (contactMaterial) {
-    $p.world.addContactMaterial(contactMaterial);
+  // Load all existing nodes, including ones containing physics meta-data
+  this.scene.childNodes.forEach(function (node) {
+    self.buildNode(node);
   });
+
+  // If there is no physics node, set a default gravity
+  if(this.scene.getElementsByTagName('physics').length === 0) {
+    self.world.gravity.set(0, -20, 0);
+  }
 
   // Add a ground plane
   // @todo Make the ground plane a part of the scene graph
-  var groundShape = new CANNON.Plane();
-
   var groundBody = new CANNON.Body({
     mass: 0,
-    shape: groundShape,
-    material: materials.ground
+    shape: new CANNON.Plane(),
+    material: this.materials.ground ? this.materials.ground : this.materials.default
   });
-
   groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
   this.world.add(groundBody);
-
-  // Load all other existing nodes
-  this.scene.childNodes.forEach(function (node) {
-    $p.buildNode(node);
-  });
 
   this._inited = true;
 };
@@ -167,6 +125,8 @@ Physics.prototype.stop = function () {
  * Add the given scene node to the physics engine
  */
 Physics.prototype.buildNode = function (el) {
+  var self = this;
+
     // @todo not everything is a box
   switch (el.nodeName) {
   case 'billboard':
@@ -175,11 +135,11 @@ Physics.prototype.buildNode = function (el) {
     var shape = el.nodeName === 'player' ? new CANNON.Sphere(0.5) : new CANNON.Box(cannonVec(el.scale.clone().multiplyScalar(0.5)));
 
     var body = new CANNON.Body({
-      mass: el.nodeName === 'player' ? 100 : 5, // kg
+      mass: el.mass,
       position: cannonVec(el.position),
       velocity: cannonVec(el.velocity),
       shape: shape,
-      material: materials.normal
+      material: self.materials[el.material]
     });
     body.quaternion.setFromEuler(el.rotation.x, el.rotation.y, el.rotation.z);
 
@@ -204,6 +164,13 @@ Physics.prototype.buildNode = function (el) {
     el.addPropertyChangeObserver('mass', function(mass) {
       body.mass = mass;
     });
+    el.addPropertyChangeObserver('material', function(material) {
+      if (self.materials[material]) {
+        body.material = self.materials[material];
+      } else {
+        throw 'Bad material name "' + material + '"';
+      }
+    });
 
     el.applyImpulse = function (velocity, forcePoint) {
       body.applyImpulse(cannonVec(velocity), cannonVec(forcePoint));
@@ -215,30 +182,93 @@ Physics.prototype.buildNode = function (el) {
       body.persistentForce = null;
     };
 
-    el.setMaterial = function (material) {
-      if (materials[material]) {
-        body.material = materials[material];
-      } else {
-        throw 'Bad material name "' + material + '"';
+    // Players aren't updated by the server-side physics
+    if(el.nodeName !== 'player') {
+      body.updateScene = function () {
+        if (body.sleepState !== CANNON.Body.SLEEPING) {
+          var r = new Euler();
+          r.setFromQuaternion(body.quaternion);
+          // LOLHACKS
+          r.distanceToSquared = Vector.prototype.distanceToSquared;
+
+          var v = vrVec(body.position);
+          if (v.distanceToSquared(el.position) > 0.01) {
+            el.position = v;
+            console.log('updating position of ' + el.nodeName + ' to ' + v);
+          }
+
+          var vel = vrVec(body.velocity);
+          if (vel.distanceToSquared(el.velocity) > 0.01) el.velocity = vel;
+
+          if (r.distanceToSquared(el.rotation) > 0.01) el.rotation = r;
+        }
+      };
+    }
+
+    break;
+
+  case 'physics':
+    // Set gravity
+    var gravity = el.gravity;
+    this.world.gravity.set(gravity.x, gravity.y, gravity.z);
+
+    // Update gravity
+    el.addPropertyChangeObserver('gravity', function(gravity) {
+      self.world.gravity.set(gravity.x, gravity.y, gravity.z);
+    });
+    break;
+
+  case 'material':
+    // Add a material
+    self.materials[el.name] = new CANNON.Material(el.name);
+
+    el.addPropertyChangeObserver('name', function(name) {
+      el.name = name;
+      self.materials[name] = el;
+    });
+
+    break;
+
+  case 'contactmaterial':
+    // Add a material
+    self.materials[el.name] = new CANNON.Material(el.name);
+
+    var contactMaterial = new CANNON.ContactMaterial(
+      self.materials[el.material1],
+      self.materials[el.material2],
+      {
+        friction: el.friction,
+        restitution: el.restitution,
+        contactEquationStiffness: el.contactEquationStiffness,
+        contactEquationRelaxation: el.contactEquationRelaxation,
+        frictionEquationStiffness: el.frictionEquationStiffness,
+        frictionEquationRelaxation: el.frictionEquationRegularizationTime
       }
-    };
+    );
 
-    body.updateScene = function () {
-      if (body.sleepState !== CANNON.Body.SLEEPING) {
-        var r = new Euler();
-        r.setFromQuaternion(body.quaternion);
-        // LOLHACKS
-        r.distanceToSquared = Vector.prototype.distanceToSquared;
+    self.world.addContactMaterial(contactMaterial);
 
-        var v = vrVec(body.position);
-        if (v.distanceToSquared(el.position) > 0.01) el.position = v;
+    var properties = [
+      'friction',
+      'restitution',
+      'contactEquationStiffness',
+      'contactEquationRelaxation',
+      'contactEquationRelaxation',
+      'frictionEquationStiffness',
+      'frictionEquationRelaxation'
+    ];
+    properties.forEach(function (property) {
+      el.addPropertyChangeObserver(property, function(value) {
+        contactMaterial[property] = value;
+      });
+    });
 
-        var vel = vrVec(body.velocity);
-        if (vel.distanceToSquared(el.velocity) > 0.01) el.velocity = v;
-
-        if (r.distanceToSquared(el.rotation) > 0.01) el.rotation = r;
-      }
-    };
+    el.addPropertyChangeObserver('material1', function(material) {
+      contactMaterials.materials[0] = self.materials[el.material];
+    });
+    el.addPropertyChangeObserver('material2', function(material) {
+      contactMaterials.materials[1] = self.materials[el.material];
+    });
 
     break;
   }

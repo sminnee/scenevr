@@ -20,21 +20,7 @@ Object.defineProperties(SpatialElement.prototype, {
   rotation: Element.createEulerProperty('rotation', [0, 0, 0]),
   velocity: Element.createVectorProperty('velocity', [0, 0, 0]),
   mass: Element.createScalarProperty('mass', 0),
-  material: {
-    get: function () {
-      return this['_material'] || (this['_material'] = 'default');
-    },
-    set: function (value) {
-      var v;
-
-      if (typeof value === 'string') {
-        this['_material'] = value;
-
-      } else {
-        throw new Error('Invalid ' + 'material' + ' argument');
-      }
-    }
-  }
+  material: Element.createStringProperty('material', 'default')
 });
 
 module.exports = SpatialElement;

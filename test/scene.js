@@ -9,6 +9,9 @@ var Link = require('../elements/link');
 var Skybox = require('../elements/skybox');
 var Fog = require('../elements/fog');
 var Audio = require('../elements/audio');
+var Physics = require('../elements/physics');
+var Material = require('../elements/material');
+var ContactMaterial = require('../elements/contactMaterial');
 
 test('should create', function (t) {
   var s;
@@ -123,6 +126,30 @@ test('all_tags', function (t) {
       t.equal(scene.getElementsByTagName('plane').length, 1);
       t.ok(scene.getElementsByTagName('plane')[0].style.textureMap.match('url'));
       t.ok(scene.getElementsByTagName('plane')[0] instanceof Plane);
+      t.end();
+    });
+  });
+
+  t.test('should parse physics', function (t) {
+    Scene.load(process.cwd() + '/test/fixtures/all_tags.xml', function (scene) {
+      t.equal(scene.getElementsByTagName('physics').length, 1);
+      t.ok(scene.getElementsByTagName('physics')[0] instanceof Physics);
+      t.end();
+    });
+  });
+
+  t.test('should parse material', function (t) {
+    Scene.load(process.cwd() + '/test/fixtures/all_tags.xml', function (scene) {
+      t.equal(scene.getElementsByTagName('material').length, 2);
+      t.ok(scene.getElementsByTagName('material')[0] instanceof Material);
+      t.end();
+    });
+  });
+
+  t.test('should parse contactMaterial', function (t) {
+    Scene.load(process.cwd() + '/test/fixtures/all_tags.xml', function (scene) {
+      t.equal(scene.getElementsByTagName('contactMaterial').length, 1);
+      t.ok(scene.getElementsByTagName('contactMaterial')[0] instanceof ContactMaterial);
       t.end();
     });
   });
