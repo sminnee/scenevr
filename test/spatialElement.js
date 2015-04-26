@@ -92,6 +92,34 @@ test('position', function (t) {
     t.end();
   });
 
+  t.test('should allow change observation', function (t) {
+    t.plan(5);
+
+    var e = new SpatialElement('box');
+    e.position = '1 2 3';
+
+    var message = '(unknown)';
+    e.addPropertyChangeObserver('position', function (value) {
+      t.ok(message);
+    });
+
+    message = 'Replaced by string';
+    e.position = '4 5 6';
+
+    message = 'Replaced by vector';
+    e.position = new Vector(7, 8, 9);
+
+    message = 'Single ordinate updated - x';
+    e.position.x = 10;
+    message = 'Single ordinate updated - y';
+    e.position.y = 11;
+    message = 'Single ordinate updated - z';
+    e.position.z = 12;
+
+    t.end();
+  });
+
+
   t.end();
 });
 

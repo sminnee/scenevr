@@ -26,6 +26,31 @@ function createEuler (element, x, y, z) {
   return e;
 }
 
+SpatialElement.prototype._propertyChangeObserverList = [];
+
+/**
+ * Add a callback to be called when the given property is chagned.
+ * The observer will perform deep-inspection of vector and euler properties
+ */
+SpatialElement.prototype.addPropertyChangeObserver = function (propName, callback) {
+  if(!this._propertyChangeObserverList[propName]) {
+    this._propertyChangeObserverList[propName] = [];
+  }
+  this._propertyChangeObserverList[propName].push(callback);
+};
+
+/**
+ * Helper function to trigger observer callbacks for a change to the given propName
+ */
+SpatialElement.prototype._triggerPropertyChange = function (propName) {
+  var value = this[propName];
+  if(this._propertyChangeObserverList[propName]) {
+    this._propertyChangeObserverList[propName].forEach(function (callback) {
+      callback(value);
+    });
+  }
+};
+
 /**
  * Return a get/set pair to manage a vector parameter
  * attrName: The name of the property (e.g. 'velocity')
@@ -35,7 +60,15 @@ function createVectorProperty(attrName, defaultValue) {
   var privateProperty = '_'+attrName;
   return {
     get: function () {
-      return this[privateProperty] || (this[privateProperty] = createVector(this, defaultValue[0], defaultValue[1], defaultValue[2]));
+      if(!this[privateProperty]) {
+        var self = this;
+        this[privateProperty] = createVector(this, defaultValue[0], defaultValue[1], defaultValue[2]);
+        // Add change observer for deep change inspection
+        this[privateProperty].addChangeObserver(function () {
+          self._triggerPropertyChange(attrName);
+        });
+      }
+      return this[privateProperty];
     },
     set: function (value) {
       var v;
@@ -53,6 +86,15 @@ function createVectorProperty(attrName, defaultValue) {
       } else {
         throw new Error('Invalid ' + attrName + ' argument');
       }
+
+      // Add change observer for deep change inspection
+      var self = this;
+      this[privateProperty].addChangeObserver(function () {
+        self._triggerPropertyChange(attrName);
+      });
+
+      // Trigger change observers
+      this._triggerPropertyChange(attrName);
     }
   };
 }
@@ -66,7 +108,15 @@ function createEulerProperty(attrName, defaultValue) {
   var privateProperty = '_'+attrName;
   return {
     get: function () {
-      return this[privateProperty] || (this[privateProperty] = createEuler(this, defaultValue[0], defaultValue[1], defaultValue[2]));
+      if(!this[privateProperty]) {
+        var self = this;
+        this[privateProperty] = createEuler(this, defaultValue[0], defaultValue[1], defaultValue[2]);
+        // Add change observer for deep change inspection
+        this[privateProperty].addChangeObserver(function () {
+          self._triggerPropertyChange(attrName);
+        });
+      }
+      return this[privateProperty];
     },
     set: function (value) {
       var v;
@@ -84,6 +134,15 @@ function createEulerProperty(attrName, defaultValue) {
       } else {
         throw new Error('Invalid ' + attrName + ' argument');
       }
+
+      // Add change observer for deep change inspection
+      var self = this;
+      this[privateProperty].addChangeObserver(function () {
+        self._triggerPropertyChange(attrName);
+      });
+
+      // Trigger change observers
+      this._triggerPropertyChange(attrName);
     }
   };
 }
