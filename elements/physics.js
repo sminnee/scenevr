@@ -74,6 +74,13 @@ Physics.prototype.start = function () {
       var dt = (time - lastTime) / 1000;
       lastTime = time;
 
+      // Apply persistently-applied forces before each step() call
+      world.bodies.forEach(function(body) {
+        if(body.persistentForce) {
+          body.force.copy(body.persistentForce);
+        }
+      });
+
       world.step(fixedTimeStep, dt, maxSubSteps);
       world.bodies.forEach(function (body) {
         if (body.updateScene) body.updateScene();
@@ -128,6 +135,27 @@ Physics.prototype.buildNode = function (el) {
     };
     el.setZ = function(z) {
       el.position.z = body.position.z = z;
+    };
+
+    el.applyImpulse = function(velocity, forcePoint) {
+      body.applyImpulse(cannonVec(velocity), cannonVec(forcePoint));
+    };
+    el.setPersistentForce = function(force) {
+      body.persistentForce = cannonVec(force);
+    };
+    el.clearPersistentForce = function() {
+      body.persistentForce = null;
+    };
+    el.setVelocity = function(velocity) {
+      // Process string representation of velocity
+      if(typeof velocity == 'string') {
+        velocity = velocity.split(' ');
+        //console.log(velocity);
+        velocity = { x: parseFloat(velocity[0]), y: parseFloat(velocity[1]) , z: parseFloat(velocity[2]) };
+      }
+
+      el.velocity = velocity;
+      body.velocity = cannonVec(velocity);
     };
 
     body.updateScene = function () {
