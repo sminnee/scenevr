@@ -66,7 +66,7 @@ function Physics (scene) {
   };
 }
 
-Physics.prototype.start = function () {
+Physics.prototype.init = function () {
   var $p = this;
 
   // Create world
@@ -95,6 +95,12 @@ Physics.prototype.start = function () {
   this.scene.childNodes.forEach(function (node) {
     $p.buildNode(node);
   });
+
+  this._inited = true;
+};
+
+Physics.prototype.start = function () {
+  if(!this._inited) this.init();
 
   // Start the world loop
   var lastTime = null;
