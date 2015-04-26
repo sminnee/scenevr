@@ -166,25 +166,33 @@ Physics.prototype.buildNode = function (el) {
     var body = new CANNON.Body({
       mass: el.nodeName === 'player' ? 100 : 5, // kg
       position: cannonVec(el.position),
+      velocity: cannonVec(el.velocity),
       shape: shape,
       material: materials.normal
     });
+    body.quaternion.setFromEuler(el.rotation.x, el.rotation.y, el.rotation.z);
+
     this.world.addBody(body);
 
     console.log('Adding ', el.nodeName, ' at ', el.position.x, el.position.y, el.position.z);
 
     el.body = body;
 
-    // To do: replace this with a DOM Mutation Observer
-    el.setX = function (x) {
-      el.position.x = body.position.x = x;
-    };
-    el.setY = function (y) {
-      el.position.y = body.position.y = y;
-    };
-    el.setZ = function (z) {
-      el.position.z = body.position.z = z;
-    };
+    el.addPropertyChangeObserver('position', function(position) {
+      body.position = cannonVec(position);
+    });
+    el.addPropertyChangeObserver('rotation', function(rotation) {
+      body.quaternion.setFromEuler(rotation.x, rotation.y, rotation.z);
+    });
+    el.addPropertyChangeObserver('scale', function(scale) {
+      throw "Can't mutate scale in real-time yet";
+    });
+    el.addPropertyChangeObserver('velocity', function(velocity) {
+      body.velocity = cannonVec(velocity);
+    });
+    el.addPropertyChangeObserver('mass', function(mass) {
+      body.mass = mass;
+    });
 
     el.applyImpulse = function (velocity, forcePoint) {
       body.applyImpulse(cannonVec(velocity), cannonVec(forcePoint));
@@ -222,9 +230,13 @@ Physics.prototype.buildNode = function (el) {
         r.setFromQuaternion(body.quaternion);
         // LOLHACKS
         r.distanceToSquared = Vector.prototype.distanceToSquared;
-        var v = vrVec(body.position);
 
+        var v = vrVec(body.position);
         if (v.distanceToSquared(el.position) > 0.01) el.position = v;
+
+        var vel = vrVec(body.velocity);
+        if (vel.distanceToSquared(el.velocity) > 0.01) el.velocity = v;
+
         if (r.distanceToSquared(el.rotation) > 0.01) el.rotation = r;
       }
     };

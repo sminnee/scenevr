@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ 
+<!--
+  A train that one day you can ride on.
+  Demonstrates improved physics engine that allows server-processed dynamic entities.
+  Also demonstrates XML schema for customising the physics engine
+-->
+<scene>
+
+  <spawn position="0 2 0" />
+
+  <!-- physics meta-data -->
+  <physics gravity="0 -20 0">
+    <!-- different materials and interactions -->
+    <material name="default" />
+    <material name="ground">
+      <contactMaterial with="default"
+        friction="0.4" restitution="0.3"
+        contactEquationStiffness="1e8"
+        contactEquationRelaxation="3"
+        frictionEquationStiffness="10000000"
+        frictionEquationRegularizationTime="3" />
+    </material>
+    <material name="vehicle">
+      <contactMaterial with="ground"
+        friction="0.4" restitution="0.3"
+        contactEquationStiffness="1e8"
+        contactEquationRelaxation="3"
+        frictionEquationStiffness="10000000" />
+    </material>
+  </physics>
+  
+  <!--
+    You can put your code in an external file. Use the provided gulpfile to rebuild
+    src/wave.js on demand
+  -->
+  <!-- apply a custome material to the ground plane -->
+  <groundPlane material="ground" />
+
+  <box id="train" position="1 0.2 -10" velocity="1 0 0" rotation="0.1 0.2 0.3" scale="5 0.1 3" material="vehicle" mass="5" />
+  <box id="luggage" position="1 1.2 -10" mass="5" />
+</scene>

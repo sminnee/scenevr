@@ -176,6 +176,9 @@ function createScalarProperty(attrName, defaultValue) {
       } else {
         throw new Error('Invalid ' + attrName + ' argument');
       }
+
+      // Trigger change observers
+      this._triggerPropertyChange(attrName);
     }
   };
 }
@@ -184,7 +187,24 @@ function createScalarProperty(attrName, defaultValue) {
 Object.defineProperties(SpatialElement.prototype, {
   position: createVectorProperty('position', [0, 0, 0]),
   scale: createVectorProperty('scale', [1, 1, 1]),
-  rotation: createEulerProperty('rotation', [0, 0, 0])
+  rotation: createEulerProperty('rotation', [0, 0, 0]),
+  velocity: createVectorProperty('velocity', [0, 0, 0]),
+  mass: createScalarProperty('mass', 0),
+  material: {
+    get: function () {
+      return this['_material'] || (this['_material'] = 'default');
+    },
+    set: function (value) {
+      var v;
+
+      if (typeof value === 'string') {
+        this['_material'] = value;
+
+      } else {
+        throw new Error('Invalid ' + 'material' + ' argument');
+      }
+    }
+  }
 });
 
 module.exports = SpatialElement;
