@@ -1,14 +1,14 @@
 var test = require('tape');
-var Scene = require('../elements/scene');
-var Script = require('../elements/script');
-var Box = require('../elements/box');
-var Plane = require('../elements/plane');
-var Spawn = require('../elements/spawn');
-var Model = require('../elements/model');
-var Link = require('../elements/link');
-var Skybox = require('../elements/skybox');
-var Fog = require('../elements/fog');
-var Audio = require('../elements/audio');
+var Scene = require('../lib/elements/scene');
+var Script = require('../lib/elements/script');
+var Box = require('../lib/elements/box');
+var Plane = require('../lib/elements/plane');
+var Spawn = require('../lib/elements/spawn');
+var Model = require('../lib/elements/model');
+var Link = require('../lib/elements/link');
+var Skybox = require('../lib/elements/skybox');
+var Fog = require('../lib/elements/fog');
+var Audio = require('../lib/elements/audio');
 
 test('should create', function (t) {
   var s;
