@@ -1,17 +1,6 @@
-# SceneVR
+# SceneVR Parser
 
-[![Build Status](https://travis-ci.org/scenevr/scenevr.svg?branch=master)](https://travis-ci.org/scenevr/scenevr)
-[![Download count](https://img.shields.io/npm/dm/scenevr.svg?style=flat)](https://npmjs.org/package/scenevr)
-
-[![js-semistandard-style](https://cdn.rawgit.com/flet/semistandard/master/badge.svg)](https://github.com/flet/semistandard)
-
-The scene server loads scene files in .xml format and listens for clients on a websocket connection. Any connected client gets a streamed version of the world sent to them. You can write scripts in javascript using <script /> tags in your scenefile to provide interactivity to connected clients.
-
-Contact [bnolan@gmail.com](mailto:bnolan@gmail.com). Follow development at [@scenevr](http://twitter.com/scenevr/).
-
-![Screenshot](https://pbs.twimg.com/media/B2tuCOKCAAA7VQ7.png:large)
-
-See [the protocol in action](http://www.scenevr.com/protocol.html).
+This parser library represents a scene dom. It should probably be called dom, but Ben chose parser.
 
 ---
 
